@@ -80,8 +80,8 @@ const Login = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@empresa.pt" />
+                <Label htmlFor="email">Utilizador *</Label>
+                <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome de utilizador ou email" />
               </div>
 
               <div className="space-y-2">

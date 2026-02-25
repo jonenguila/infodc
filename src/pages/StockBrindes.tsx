@@ -3,7 +3,7 @@ import {
   Package, AlertTriangle, Search, Plus, Upload, RotateCcw,
   BarChart3, ClipboardList, History, Archive, FileSpreadsheet,
   CheckCircle2, ArrowDownCircle, ArrowUpCircle, CalendarIcon,
-  FileDown, Users,
+  FileDown, Users, Edit, Trash2,
 } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -152,10 +152,12 @@ const OverviewTab = () => {
 
 // ─── STOCK TAB ───
 const StockTab = () => {
-  const { produtos, tipologias, localizacoes, getEstado, importarExcel, adicionarProduto, exportarTemplate } = useStockStore();
+  const { produtos, tipologias, localizacoes, getEstado, importarExcel, adicionarProduto, editarProduto, eliminarProduto, exportarTemplate } = useStockStore();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [newNome, setNewNome] = useState("");
   const [newTipologia, setNewTipologia] = useState("");
   const [newLocalizacao, setNewLocalizacao] = useState("");
@@ -208,6 +210,29 @@ const StockTab = () => {
     URL.revokeObjectURL(url);
   };
 
+  const openEditDialog = (p: any) => {
+    setEditingProduct(p);
+    setNewNome(p.nome);
+    setNewTipologia(p.tipologia);
+    setNewLocalizacao(p.localizacao || "");
+    setNewStock(String(p.stockAtual));
+    setNewMinimo(String(p.stockMinimo));
+    setShowEditDialog(true);
+  };
+
+  const handleEditProduct = () => {
+    if (!editingProduct) return;
+    editarProduto(editingProduct.id, newNome, newTipologia, newLocalizacao, Number(newStock) || 0, Number(newMinimo) || 40);
+    toast({ title: "Produto atualizado", description: `"${newNome}" foi atualizado com sucesso.` });
+    setShowEditDialog(false);
+    setEditingProduct(null);
+  };
+
+  const handleDeleteProduct = (p: any) => {
+    eliminarProduto(p.id);
+    toast({ title: "Produto eliminado", description: `"${p.nome}" foi removido do stock.` });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center">
@@ -246,12 +271,13 @@ const StockTab = () => {
               <TableHead>Stock Atual</TableHead>
               <TableHead>Stock Mínimo</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                   Nenhum produto encontrado.
                 </TableCell>
               </TableRow>
@@ -277,6 +303,16 @@ const StockTab = () => {
                   <TableCell className="text-muted-foreground text-sm">{p.stockMinimo}</TableCell>
                   <TableCell>
                     <Badge className={`${estadoStyle[estado]} border-0 text-[11px]`}>{estado}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(p)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteProduct(p)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -328,6 +364,52 @@ const StockTab = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
             <Button onClick={handleAddProduct} disabled={!newNome.trim()}>Adicionar Produto</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>Alterar as informações do produto.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Nome do Produto <span className="text-destructive">*</span></Label>
+              <Input value={newNome} onChange={(e) => setNewNome(e.target.value)} placeholder="Ex: Caneta Data CoLAB" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label>Tipologia <span className="text-destructive">*</span></Label>
+                <select value={newTipologia} onChange={(e) => setNewTipologia(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <option value="">Selecionar...</option>
+                  {tipologias.map((t) => <option key={t.id} value={t.nome}>{t.nome}</option>)}
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Localização</Label>
+                <select value={newLocalizacao} onChange={(e) => setNewLocalizacao(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <option value="">Selecionar...</option>
+                  {localizacoes.map((l) => <option key={l.id} value={l.nome}>{l.nome}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label>Stock Atual</Label>
+                <Input type="number" min={0} value={newStock} onChange={(e) => setNewStock(e.target.value)} placeholder="0" />
+              </div>
+              <div className="grid gap-2">
+                <Label>Stock Mínimo</Label>
+                <Input type="number" min={0} value={newMinimo} onChange={(e) => setNewMinimo(e.target.value)} placeholder="40" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancelar</Button>
+            <Button onClick={handleEditProduct} disabled={!newNome.trim()}>Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

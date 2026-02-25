@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Wrench, Box, ClipboardList, FolderKanban, BarChart3, TrendingUp,
 } from "lucide-react";
-import { format, subMonths, subYears, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { format, subMonths, subYears, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfYear, endOfYear, formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +16,6 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useStockStore } from "@/stores/stockStore";
 
-const stats = [
-  { label: "Serviços", value: "4", icon: Wrench, change: "Ativos" },
-  { label: "Projetos Financiados", value: "8", icon: FolderKanban, change: "+2" },
-  { label: "Stock Total", value: "8.432", icon: Box, change: "-2%" },
-  { label: "Pedidos Pendentes", value: "23", icon: ClipboardList, change: "+5" },
-];
-
 type FilterMode = "month" | "year" | "range";
 type ChartType = "bar" | "line";
 type MetricType = "pedidos" | "unidades";
@@ -35,7 +28,42 @@ const chartConfig = {
 };
 
 const Dashboard = () => {
-  const { pedidos } = useStockStore();
+  const { pedidos, produtos, movimentos } = useStockStore();
+
+  const stockTotal = produtos.reduce((sum, p) => sum + p.stockAtual, 0);
+  const pedidosPendentes = pedidos.filter((p) => p.estado === "Pendente" || p.estado === "Em Preparação" || p.estado === "Aprovado");
+
+  const stats = [
+    { label: "Serviços", value: "4", icon: Wrench, change: "Ativos" },
+    { label: "Projetos Financiados", value: "8", icon: FolderKanban, change: "+2" },
+    { label: "Stock Total", value: stockTotal.toLocaleString("pt-PT"), icon: Box, change: `${produtos.length} produtos` },
+    { label: "Pedidos Pendentes", value: String(pedidosPendentes.length), icon: ClipboardList, change: `${pedidos.length} total` },
+  ];
+
+  const atividadesRecentes = useMemo(() => {
+    const items: { text: string; time: string; date: Date }[] = [];
+    pedidos.forEach((p) => {
+      items.push({
+        text: `Pedido ${p.numero} criado (${p.estado})`,
+        date: parseISO(p.criadoEm),
+        time: formatDistanceToNow(parseISO(p.criadoEm), { addSuffix: true, locale: pt }),
+      });
+    });
+    movimentos.forEach((m) => {
+      items.push({
+        text: `${m.tipo === "levantamento" ? "Levantamento" : "Devolução"} — ${m.produtoNome} (${m.quantidade} un.)`,
+        date: parseISO(m.data),
+        time: formatDistanceToNow(parseISO(m.data), { addSuffix: true, locale: pt }),
+      });
+    });
+    return items.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8);
+  }, [pedidos, movimentos]);
+
+  const pedidosRecentes = useMemo(() => {
+    return [...pedidos]
+      .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+      .slice(0, 6);
+  }, [pedidos]);
 
   const [filterMode, setFilterMode] = useState<FilterMode>("month");
   const [chartType, setChartType] = useState<ChartType>("bar");
@@ -264,20 +292,18 @@ const Dashboard = () => {
             <CardTitle className="text-lg">Atividade Recente</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { text: "Novo pedido #1042 criado", time: "Há 5 min" },
-                { text: "Stock atualizado — Categoria Eletrónicos", time: "Há 12 min" },
-                { text: "Utilizador João Silva adicionado", time: "Há 1 hora" },
-                { text: "Exportação de dados concluída", time: "Há 2 horas" },
-                { text: "Novo produto adicionado ao catálogo", time: "Há 3 horas" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <span className="text-sm text-foreground">{item.text}</span>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{item.time}</span>
-                </div>
-              ))}
-            </div>
+            {atividadesRecentes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Sem atividade registada.</p>
+            ) : (
+              <div className="space-y-4">
+                {atividadesRecentes.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <span className="text-sm text-foreground">{item.text}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{item.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -286,29 +312,29 @@ const Dashboard = () => {
             <CardTitle className="text-lg">Pedidos Recentes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { id: "#1042", status: "Pendente", client: "Empresa ABC", value: "€2.340" },
-                { id: "#1041", status: "Em Progresso", client: "Tech Solutions", value: "€890" },
-                { id: "#1040", status: "Concluído", client: "Global Corp", value: "€5.120" },
-                { id: "#1039", status: "Concluído", client: "StartUp Lda", value: "€1.750" },
-              ].map((order) => (
-                <div key={order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-primary">{order.id}</span>
-                    <span className="text-sm text-foreground">{order.client}</span>
+            {pedidosRecentes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Sem pedidos registados.</p>
+            ) : (
+              <div className="space-y-3">
+                {pedidosRecentes.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-primary">{order.numero}</span>
+                      <span className="text-sm text-foreground">{order.nomeRequisitante}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge className={`text-[11px] border-0 ${
+                        order.estado === "Concluído" || order.estado === "Entregue" ? "bg-green-100 text-green-700"
+                          : order.estado === "Pendente" ? "bg-amber-100 text-amber-700"
+                          : order.estado === "Cancelado" ? "bg-red-100 text-red-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>{order.estado}</Badge>
+                      <span className="text-xs text-muted-foreground">{format(parseISO(order.criadoEm), "dd/MM/yyyy")}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge className={`text-[11px] border-0 ${
-                      order.status === "Concluído" ? "bg-green-100 text-green-700"
-                        : order.status === "Pendente" ? "bg-amber-100 text-amber-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>{order.status}</Badge>
-                    <span className="text-sm font-medium text-foreground">{order.value}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

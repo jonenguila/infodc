@@ -203,6 +203,16 @@ export function useStockStore() {
     return null;
   };
 
+  const editarProduto = (id: number, nome: string, tipologia: string, localizacao: string, stockAtual: number, stockMinimo: number) => {
+    _produtos = _produtos.map((p) => p.id === id ? { ...p, nome: nome.trim(), tipologia, localizacao, stockAtual, stockMinimo } : p);
+    notify();
+  };
+
+  const eliminarProduto = (id: number) => {
+    _produtos = _produtos.filter((p) => p.id !== id);
+    notify();
+  };
+
   const getNextPedidoNumber = () => {
     return `PED-${String(_nextPedidoNumber).padStart(4, "0")}`;
   };
@@ -335,7 +345,7 @@ export function useStockStore() {
 
   return {
     produtos, tipologias, localizacoes, movimentos, pedidos, pedidosLevantamento, documentosDevolucao,
-    getEstado, importarExcel, adicionarProduto, exportarTemplate, getNextPedidoNumber,
+    getEstado, importarExcel, adicionarProduto, editarProduto, eliminarProduto, exportarTemplate, getNextPedidoNumber,
     criarPedido, atualizarEstadoPedido, criarLevantamento, registarDevolucao, registarDocumentoDevolucao,
     adicionarTipologia, editarTipologia, eliminarTipologia,
     adicionarLocalizacao, editarLocalizacao, eliminarLocalizacao,

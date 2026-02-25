@@ -1,17 +1,14 @@
 import {
-  Package, Wrench, Box, TrendingUp, Users, ClipboardList,
-  FolderKanban, Megaphone,
+  Wrench, Box, ClipboardList, FolderKanban,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const stats = [
-  { label: "Produtos", value: "1.248", icon: Package, change: "+12%" },
   { label: "Serviços", value: "4", icon: Wrench, change: "Ativos" },
   { label: "Projetos Financiados", value: "8", icon: FolderKanban, change: "+2" },
   { label: "Stock Total", value: "8.432", icon: Box, change: "-2%" },
   { label: "Pedidos Pendentes", value: "23", icon: ClipboardList, change: "+5" },
-  { label: "Utilizadores", value: "156", icon: Users, change: "+8" },
 ];
 
 const Dashboard = () => {
@@ -20,11 +17,11 @@ const Dashboard = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Visão geral do sistema ERP — +INFO Data CoLAB
+          Visão geral — +INFO Data CoLAB
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat) => (
           <Card key={stat.label} className="hover:shadow-md hover:border-primary/20 transition-all">
             <CardContent className="p-5">

@@ -115,31 +115,37 @@ const OverviewTab = () => {
             Últimos Movimentos
           </h3>
         </div>
-        {pedidosLevantamento.length === 0 ? (
+        {movimentos.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">Sem movimentos registados.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="bg-secondary/30">
+                <TableHead>Tipo</TableHead>
                 <TableHead>Produto</TableHead>
-                <TableHead>Qtd. Levantada</TableHead>
-                <TableHead>Qtd. Devolvida</TableHead>
-                <TableHead>Consumo Real</TableHead>
+                <TableHead>Quantidade</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Evento</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pedidosLevantamento.map((ped) => (
-                <TableRow key={ped.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium text-foreground">{ped.produtoNome}</TableCell>
-                  <TableCell className="text-foreground">{ped.quantidadeLevantada}</TableCell>
-                  <TableCell className="text-foreground">{ped.quantidadeDevolvida}</TableCell>
-                  <TableCell className="font-semibold text-foreground">{ped.consumoReal}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{ped.data}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{ped.responsavel}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{ped.evento}</TableCell>
+              {[...movimentos].reverse().slice(0, 20).map((mov) => (
+                <TableRow key={mov.id} className="hover:bg-muted/30">
+                  <TableCell>
+                    <Badge className={`border-0 text-[11px] ${mov.tipo === "levantamento" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                      {mov.tipo === "levantamento" ? (
+                        <span className="flex items-center gap-1"><ArrowUpCircle className="w-3 h-3" /> Pedido</span>
+                      ) : (
+                        <span className="flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Devolução</span>
+                      )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-foreground">{mov.produtoNome}</TableCell>
+                  <TableCell className="text-foreground font-semibold">{mov.quantidade}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{mov.data}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{mov.responsavel}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{mov.evento}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

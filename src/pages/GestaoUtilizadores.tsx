@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { Perfil } from "@/lib/permissions";
@@ -44,6 +45,7 @@ const GestaoUtilizadores = () => {
   const [resetTarget, setResetTarget] = useState<UserWithRole | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UserWithRole | null>(null);
 
   const handleResetPassword = async () => {
     if (!resetTarget || !newPassword) return;
@@ -238,7 +240,7 @@ const GestaoUtilizadores = () => {
                   variant="ghost"
                   size="icon"
                   className="text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDelete(u.user_id)}
+                  onClick={() => setDeleteTarget(u)}
                   disabled={u.user_id === currentUser?.user_id}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -271,6 +273,27 @@ const GestaoUtilizadores = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar Utilizador</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem a certeza que deseja eliminar o utilizador <strong>{deleteTarget?.nome}</strong> ({deleteTarget?.email})? Esta ação não pode ser revertida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTarget) { handleDelete(deleteTarget.user_id); setDeleteTarget(null); } }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
